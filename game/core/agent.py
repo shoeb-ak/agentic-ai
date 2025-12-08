@@ -45,7 +45,7 @@ class Agent:
         return action_def.terminal
 
     def set_current_task(self, memory: Memory, task: str):
-        memory.add_memory({"type": "user", "content": task})
+        memory.add_memory({"role": "user", "content": task})
 
     def update_memory(self, memory: Memory, response: str, result: dict):
         """Update memory with the agent's decision and the environment's response."""
