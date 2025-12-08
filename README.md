@@ -1,93 +1,60 @@
-🧠 GAME Agent Framework
-A Modular, Extensible Agentic AI System Built on the GAME Architecture (Goals · Actions · Memory · Environment)
+# 🧠 GAME Agent Framework  
+### *A Modular, Extensible Agentic AI System Built on the GAME Architecture (Goals · Actions · Memory · Environment)*
 
-<!-- replace with your own -->
+---
 
-🚀 Overview
+## 🚀 Overview
 
-This repository implements a fully modular Agentic AI framework based on the G.A.M.E. architecture:
+This repository implements a **modular Agentic AI framework** based on the **G.A.M.E. architecture**:
 
+```
 G → Goals  
 A → Actions  
 M → Memory  
 E → Environment  
+```
 
-
-The framework integrates with Groq's Llama 3.3 70B for fast structured inference and supports JSON-based function calling, enabling reliable tool execution.
+The framework integrates with **Groq's Llama 3.3 70B** for fast structured inference and supports **JSON-based function calling**, enabling reliable tool execution.
 
 This project demonstrates:
 
-Agent architecture design
+- Agent architecture design  
+- Function calling with real environment actions  
+- Modular tool registry  
+- Memory-driven context  
+- Pluggable language model interface  
+- Extensibility for multiple agent types  
 
-Function calling with real environment actions
+---
 
-Modular tool registry
+## ⭐ Features
 
-Memory-driven context
+### 🔧 Modular GAME Components
+- **Goals** define high-level tasks  
+- **Actions** define what the agent can execute  
+- **Memory** stores past interactions  
+- **Environment** performs real-world execution  
 
-Pluggable language model interface
+### ⚙️ Pluggable LLM Backend
+- Groq Llama 3.3 70B included  
+- Easily switch to OpenAI, Anthropic, or local models (Ollama, LM Studio)  
 
-Clear abstractions for extensibility
+### 🛠 Extensible Tool Registry
+Add new tools by simply registering a new `Action`.
 
-It is an excellent foundation for DevOps agents, coding agents, file-processing agents, research agents, and multi-agent systems.
+### 🔄 Full Agent Loop
+Includes:
+- Prompt construction  
+- Tool-call generation  
+- Action execution  
+- Memory update  
+- Loop termination logic  
 
-⭐ Features
-🔧 Modular GAME Components
+---
 
-Goals: Define the high-level objectives of the agent
+## 📦 Project Structure
 
-Actions: Tooling and capabilities accessible to the agent
-
-Memory: Persistent contextual history
-
-Environment: Safe execution of tools
-
-⚙️ Pluggable LLM Backend
-
-Currently includes:
-
-Groq Llama 3.3 70B — ultra-fast inference
-Easily extendable to:
-
-OpenAI
-
-Anthropic
-
-Local models (Ollama / LM Studio)
-
-LiteLLM routing
-
-🛠 Extensible Tool Registry
-
-Add new agent skills simply by registering a new Action.
-
-🔄 Full Agent Loop
-
-Implements:
-
-Prompt construction
-
-Tool selection
-
-Environment execution
-
-Memory updating
-
-Iterative reasoning
-
-🎯 Strict JSON Tool Calling
-
-The agent always returns:
-
-{
-  "tool": "read_file",
-  "args": { "file_name": "main.py" }
-}
-
-
-No hallucinated formats.
-
-📦 Project Structure
+```
 game_agent/
 │
 ├── main.py                    # Entry point
@@ -100,15 +67,20 @@ game_agent/
     ├── language/             # Prompt + parser
     ├── core/                 # Agent loop
     └── llm/                  # Groq client
+```
 
-🔍 Architecture Diagram
+---
+
+## 🔍 Architecture Diagram
+
+```
                 ┌─────────────────────────────────┐
                 │              Goals               │
                 └─────────────────────────────────┘
                                │
                                ▼
 ┌────────────┐     ┌───────────────────┐     ┌────────────┐
-│  Actions   │◄────┤     Agent Loop    ├────►│  Environment│
+│  Actions   │◄────┤     Agent Loop    ├────►│ Environment │
 └────────────┘     └───────────────────┘     └────────────┘
                                │
                                ▼
@@ -118,61 +90,62 @@ game_agent/
                                │
                                ▼
                 ┌─────────────────────────────────┐
-                │            LLM (Groq)           │
+                │         LLM (Groq API)          │
                 └─────────────────────────────────┘
+```
 
-🧪 Example Use Case
-Ask the agent to read or analyze files in the current directory:
-=== GAME Agent (Groq-Powered) ===
-You can ask me to list, read, or search files.
-Example: "Read hello.txt"
+---
 
+## 🧪 Example Usage  
+
+When you run:
+
+```
+python main.py
+```
 
 Example interaction:
 
-Task: search in file main.py for "class"
-Agent Decision: {"tool": "search_in_file", "args": {"file_name": "main.py", "search_term": "class"}}
-Action Result: {"tool_executed": true, "result": [...], "timestamp": "..."}
+```
+Task: read main.py
 
-🚀 Getting Started
-1️⃣ Install dependencies
+Agent Decision: {"tool": "read_file", "args": {"file_name": "main.py"}}
+Action Result: {"tool_executed": true, "result": "...file contents...", "timestamp": "..."}
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1️⃣ Install dependencies
+
+```bash
 pip install groq
+```
 
-2️⃣ Set your Groq API key
-export GROQ_API_KEY="your_key_here"
+---
 
-3️⃣ Run the agent
+### 2️⃣ Export your Groq API key
+
+```bash
+export GROQ_API_KEY="your_api_key_here"
+```
+
+---
+
+### 3️⃣ Run the agent
+
+```bash
 python main.py
+```
 
-🧩 How the GAME Loop Works
-1. Construct Prompt
+---
 
-Goals
+## 🛠 Extending the Framework
 
-Memory
+### Add a new tool (Action)
 
-Registered Actions
-
-Environment info
-
-2. LLM Decides Action
-
-The model returns structured JSON specifying which tool to call.
-
-3. Execute Action
-
-Environment safely executes the tool.
-
-4. Update Memory
-
-Both decision + result stored.
-
-5. Repeat
-
-Until termination or max iterations reached.
-
-🛠 Extending the Framework
-Add New Actions
+```python
 def delete_file(name: str):
     os.remove(name)
     return f"{name} deleted."
@@ -183,40 +156,55 @@ registry.register(Action(
     description="Delete a file",
     parameters={
         "type": "object",
-        "properties": {"name": {"type": "string"}},
+        "properties": {
+            "name": {"type": "string"}
+        },
         "required": ["name"]
     }
 ))
+```
 
-Add New Agents
+---
 
-Swap Goals + Actions + Environment.
+### Create a new agent
 
-🔮 Roadmap
+```python
+coding_agent = Agent(
+    goals=[Goal(priority=1, name="coding", description="Write Python code")],
+    agent_language=AgentLanguage(),
+    action_registry=CodeRegistry(),
+    generate_response=GroqClient(),
+    environment=DevEnvironment(),
+)
+```
 
- Add RAG support
+---
 
- Add DevOps tools (Kubernetes, GitHub, Docker)
+## 🔮 Roadmap
 
- Build coding agent with file-editing
+- [ ] Add RAG support  
+- [ ] Add DevOps tools (Kubernetes, Docker, GitHub APIs)  
+- [ ] Build a coding agent with file-editing abilities  
+- [ ] Add multi-agent coordination  
+- [ ] Add Streamlit/FastAPI UI  
+- [ ] Add LiteLLM routing + fallback models  
+- [ ] Add JSON repair and retry logic  
+- [ ] Add CI + unit tests  
 
- Add multi-agent coordination
+---
 
- Add Streamlit or FastAPI UI
+## 🤝 Contributing
 
- Add unit tests and CI
+PRs welcome!  
+You can contribute new tools, environments, or agents.
 
- Add LiteLLM fallback provider
+---
 
-🤝 Contributing
-
-PRs welcome!
-Feel free to propose new tools, agents, or environments.
-
-📄 License
-
+## 📄 License
 MIT License
 
-🙌 Acknowledgements
+---
 
-This project was built as part of learning Agentic AI systems, focusing on modular architectures and real-world function execution using LLMs.
+## 🙌 Acknowledgements
+
+Built as part of my journey to learn and master **Agentic AI architectures**, structured tool-calling, and LLM orchestration patterns.
