@@ -1,6 +1,8 @@
 🧠 GAME Agent Framework
 A Modular, Extensible Agentic AI System Built on the GAME Architecture (Goals · Actions · Memory · Environment)
 
+<!-- replace with your own -->
+
 🚀 Overview
 
 This repository implements a fully modular Agentic AI framework based on the G.A.M.E. architecture:
@@ -218,4 +220,3 @@ MIT License
 🙌 Acknowledgements
 
 This project was built as part of learning Agentic AI systems, focusing on modular architectures and real-world function execution using LLMs.
-
