@@ -1,25 +1,36 @@
 import json
 from groq import Groq
 from game.language.prompt import Prompt
-
+from game.config.config import CONFIG
 
 class GroqClient:
     """
-    Groq LLM wrapper that supports:
-    - Standard tool_calls
-    - JSON tool calls inside message.content (Llama fallback)
+    Groq LLM wrapper.
 
-    Free tier models to use (sorted by best to worst for tool calling):
-    1. llama-3.3-70b-versatile
-    2. meta-llama/llama-4-scout-17b-16e-instruct
-    3. llama-3.1-8b-instant
-    4. qwen/qwen3-32b
-    5. meta-llama/llama-4-maverick-17b-128e-instruct
+    Responsibilities:
+    - Call Groq API
+    - Enforce single-tool-call semantics
+    - Support Groq tool_calls + JSON-in-content fallback
+
+    Non-responsibilities:
+    - Agent selection
+    - Model ranking
+    - Global defaults (handled by GlobalConfig)
     """
 
-    def __init__(self, api_key=None, model="llama-3.3-70b-versatile"):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ):
         self.client = Groq(api_key=api_key)
-        self.model = model
+
+        # Pull defaults from CONFIG
+        self.model = model or CONFIG.llm.model
+        self.max_tokens = max_tokens or CONFIG.llm.max_tokens
+        self.temperature = temperature or CONFIG.llm.temperature
 
     def __call__(self, prompt: Prompt) -> str:
         system = {"role": "system", "content": prompt.system}
@@ -30,7 +41,8 @@ class GroqClient:
             messages=messages,
             tools=prompt.tools,
             tool_choice="auto",
-            max_tokens=1024,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
         )
 
         message = response.choices[0].message

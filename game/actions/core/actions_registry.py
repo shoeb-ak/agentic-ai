@@ -1,10 +1,11 @@
-from .registry import ActionRegistry
-from .action import Action
-from .file_actions import list_files, read_file, search_in_file, should_terminate
+from game.actions.registry import ActionRegistry
+from game.actions.action import Action
+from game.actions.core.file_actions import list_files, read_file, search_in_file
+from game.actions.core.terminate_action import terminate
 
-registry = ActionRegistry()
+core_registry = ActionRegistry()
 
-registry.register(Action(
+core_registry.register(Action(
     name="list_files",
     function=list_files,
     description="List all files in the current directory",
@@ -16,7 +17,7 @@ registry.register(Action(
     }
 ))
 
-registry.register(Action(
+core_registry.register(Action(
     name="read_file",
     function=read_file,
     description="Read the contents of a specific file",
@@ -29,7 +30,7 @@ registry.register(Action(
     }
 ))
 
-registry.register(Action(
+core_registry.register(Action(
     name="search_in_file",
     function=search_in_file,
     description="Search for a term in a specific file",
@@ -43,9 +44,9 @@ registry.register(Action(
     }
 ))
 
-registry.register(Action(
-    name="should_terminate",
-    function=should_terminate,
+core_registry.register(Action(
+    name="terminate",
+    function=terminate,
     description="Terminate the conversation with a helpful summary",
     parameters={
         "type": "object",

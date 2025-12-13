@@ -14,6 +14,3 @@ def search_in_file(file_name: str, search_term: str) -> list:
             if search_term in line:
                 results.append((i+1, line.strip()))
     return results
-
-def should_terminate(message: str) -> str:
-    return message
