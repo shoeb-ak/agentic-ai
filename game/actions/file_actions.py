@@ -1,7 +1,7 @@
 import os
 
-def list_files() -> list:
-    return os.listdir('.')
+def list_files(dir_path: str) -> list:
+    return os.listdir(dir_path)
 
 def read_file(file_name: str) -> str:
     with open(file_name, 'r') as f:
@@ -15,3 +15,5 @@ def search_in_file(file_name: str, search_term: str) -> list:
                 results.append((i+1, line.strip()))
     return results
 
+def should_terminate(message: str) -> str:
+    return message

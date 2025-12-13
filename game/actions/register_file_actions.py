@@ -1,6 +1,6 @@
 from .registry import ActionRegistry
 from .action import Action
-from .file_actions import list_files, read_file, search_in_file
+from .file_actions import list_files, read_file, search_in_file, should_terminate
 
 registry = ActionRegistry()
 
@@ -8,7 +8,12 @@ registry.register(Action(
     name="list_files",
     function=list_files,
     description="List all files in the current directory",
-    parameters={"type": "object", "properties": {}, "required": []}
+    parameters=
+        {"type": "object", "properties": {
+            "dir_path": {"type": "string"}
+        }, 
+        "required": ["dir_path"]
+    }
 ))
 
 registry.register(Action(
@@ -36,5 +41,19 @@ registry.register(Action(
         },
         "required": ["file_name", "search_term"]
     }
+))
+
+registry.register(Action(
+    name="should_terminate",
+    function=should_terminate,
+    description="Terminate the conversation with a helpful summary",
+    parameters={
+        "type": "object",
+        "properties": {
+            "message": {"type": "string"}
+        },
+        "required": ["message"]
+    },
+    terminal = True
 ))
 

@@ -1,7 +1,7 @@
 import os
 
 from game.core.agent import Agent
-from game.goals.predefined_goals import file_management_goal
+from game.goals.predefined_goals import file_management_goal, terminate
 from game.language.agent_language import AgentLanguage
 from game.actions.register_file_actions import registry
 from game.environment.environment import Environment
@@ -20,7 +20,7 @@ def main():
 
     # Create Agent
     agent = Agent(
-        goals=[file_management_goal],
+        goals=[file_management_goal, terminate],
         agent_language=AgentLanguage(),
         action_registry=registry,
         generate_response=groq_llm,

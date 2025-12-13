@@ -56,11 +56,22 @@ VALID FORMAT (MANDATORY):
 
 Rules:
 - NEVER return anything except this JSON.
+- NEVER respond in natural language.
+- NEVER respond with plain text.
+- NEVER invent tools.
+- NEVER skip tool invocation.
 - NEVER use XML, angle brackets, markdown, or natural language.
 - NEVER wrap JSON in code blocks.
 - NEVER hallucinate unknown tools.
 - ONLY use tools provided in the tool list.
 - If you want to give an explanation: DO NOT. Tool call JSON ONLY.
+
+IMPORTANT TOOL USE RULES:
+- You MUST return ONLY ONE tool call per message.
+- Never return an array of tool calls.
+- Never attempt multiple actions in the same step.
+- If you need to perform multiple actions, do them one by one, in separate messages.
+- After executing one action, wait for the environment’s response BEFORE deciding the next tool.
 
 Your goals:
 {goals_text}

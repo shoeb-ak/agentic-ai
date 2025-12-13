@@ -10,3 +10,8 @@ file_management_goal = Goal(
     4. Providing helpful explanations about file contents"""
 )
 
+terminate = Goal(
+    priority=2,
+    name="Terminate",
+    description="Terminate the session when tasks are complete with a helpful summary"
+)
