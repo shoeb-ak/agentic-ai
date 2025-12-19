@@ -2,20 +2,17 @@ import json
 from groq import Groq
 from game.language.prompt import Prompt
 from game.config.config import CONFIG
+from game.llm.model_router import ModelRouter
+
 
 class GroqClient:
     """
-    Groq LLM wrapper.
+    Groq-native LLM wrapper.
 
-    Responsibilities:
-    - Call Groq API
-    - Enforce single-tool-call semantics
-    - Support Groq tool_calls + JSON-in-content fallback
-
-    Non-responsibilities:
-    - Agent selection
-    - Model ranking
-    - Global defaults (handled by GlobalConfig)
+    Contract:
+    - Uses ONLY Groq tool_calls
+    - Enforces exactly one tool call
+    - Never parses JSON from message.content
     """
 
     def __init__(
@@ -27,12 +24,13 @@ class GroqClient:
     ):
         self.client = Groq(api_key=api_key)
 
-        # Pull defaults from CONFIG
-        self.model = model or CONFIG.llm.model
+        self.model = model or ModelRouter.select_model()
         self.max_tokens = max_tokens or CONFIG.llm.max_tokens
         self.temperature = temperature or CONFIG.llm.temperature
 
-    def __call__(self, prompt: Prompt) -> str:
+        print(f"[LLM] Provider=Groq | Model={self.model}")
+
+    def __call__(self, prompt: Prompt) -> dict:
         system = {"role": "system", "content": prompt.system}
         messages = [system] + prompt.messages
 
@@ -40,7 +38,7 @@ class GroqClient:
             model=self.model,
             messages=messages,
             tools=prompt.tools,
-            tool_choice="auto",
+            tool_choice="required",
             max_tokens=self.max_tokens,
             temperature=self.temperature,
         )
@@ -48,32 +46,22 @@ class GroqClient:
         message = response.choices[0].message
 
         # --------------------------------------------
-        # 1. Preferred path: Real Groq tool_calls
+        # ONLY VALID PATH: Groq-native tool_calls
         # --------------------------------------------
-        if message.tool_calls:
-            tool_call = message.tool_calls[0]
-            tool_name = tool_call.function.name
-            args = json.loads(tool_call.function.arguments)
-            return json.dumps({"tool": tool_name, "args": args})
+        if not message.tool_calls:
+            # Model violated contract → force terminate
+            return {
+                "tool": "terminate",
+                "args": {
+                    "message": "Model failed to call a tool. Terminating safely."
+                }
+            }
 
-        # --------------------------------------------
-        # 2. Fallback: JSON tool call returned in content
-        # (Llama models often do this even with tool_choice="auto")
-        # --------------------------------------------
-        content = message.content
+        # Enforce exactly one tool call
+        tool_call = message.tool_calls[0]
 
-        try:
-            parsed = json.loads(content)
-            if "tool" in parsed and "args" in parsed:
-                return content  # already valid JSON
-        except json.JSONDecodeError:
-            pass
+        return {
+            "tool": tool_call.function.name,
+            "args": json.loads(tool_call.function.arguments),
+        }
 
-        # --------------------------------------------
-        # 3. Failure: neither tool_calls nor valid JSON
-        # --------------------------------------------
-        raise ValueError(
-            f"Model returned invalid tool call format:\n"
-            f"content={message.content}\n"
-            f"tool_calls={message.tool_calls}"
-        )

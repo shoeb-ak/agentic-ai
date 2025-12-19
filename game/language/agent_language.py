@@ -26,7 +26,7 @@ class AgentLanguage:
         memory_messages = memory.get_memories(limit=None)
 
         tools_schema = self.build_tools_schema(actions)
-
+        
         return Prompt(
             system=system_message,
             messages=memory_messages,
@@ -34,9 +34,7 @@ class AgentLanguage:
         )
 
     def build_system_message(self, goals, environment) -> str:
-        goals_text = "\n".join(
-            [f"[{g.priority}] {g.name}: {g.description}" for g in goals]
-        )
+        goals_text = "\n".join(f"- {g.description}" for g in goals)
 
         return f"""
 You are an autonomous agent. 
@@ -72,12 +70,14 @@ IMPORTANT TOOL USE RULES:
 - Never attempt multiple actions in the same step.
 - If you need to perform multiple actions, do them one by one, in separate messages.
 - After executing one action, wait for the environment’s response BEFORE deciding the next tool.
+- Use `terminate` ONLY when the task is fully complete.
 
 Your goals:
 {goals_text}
 
 Environment: {environment.__class__.__name__}
 """
+
 
     # ------------------------------------------------------------------
     # TOOL SCHEMA FOR FUNCTION CALLING
@@ -103,9 +103,18 @@ Environment: {environment.__class__.__name__}
     # ------------------------------------------------------------------
     # RESPONSE PARSING
     # ------------------------------------------------------------------
-    def parse_response(self, response_text: str):
+    def parse_response(self, response):
         """
-        Extract "tool" + "args" from JSON.
+        Parse an LLM response into a tool invocation.
+        Supports both:
+        - dict (Groq-native tool calls)
+        - JSON string (fallback / non-tool models)
         """
-        return FunctionCallParser.parse(response_text)
+        if isinstance(response, dict):
+            return response
+
+        if isinstance(response, str):
+            return FunctionCallParser.parse(response)
+
+        raise TypeError(f"Unsupported response type: {type(response)}")
 

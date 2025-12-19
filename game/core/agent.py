@@ -7,6 +7,7 @@ from game.language.agent_language import AgentLanguage
 from game.environment.environment import Environment
 from game.memory.memory import Memory
 from game.language.prompt import Prompt
+from game.llm.llm_factory import LLMFactory
 
 
 class Agent:
@@ -19,6 +20,7 @@ class Agent:
         """
         Initialize an agent with its core GAME components
         """
+        #self.generate_response = LLMFactory.create()
         self.goals = goals
         self.generate_response = generate_response
         self.agent_language = agent_language
@@ -68,7 +70,7 @@ class Agent:
         memory = memory or Memory()
         self.set_current_task(memory, user_input)
 
-        for _ in range(max_iterations):
+        for step in range(max_iterations):
 
             # 1. Build GAME prompt
             prompt = self.construct_prompt(self.goals, memory, self.actions)
@@ -79,6 +81,14 @@ class Agent:
 
             # 2. Identify intended action
             action, invocation = self.get_action(response)
+
+            # Prevent premature termination
+            if action.name == "terminate" and step == 0:
+                memory.add_memory({
+                    "role": "system",
+                    "content": "Termination is not allowed as the first action. Execute the required tool instead."
+                })
+                continue
 
             # 3. Execute the action
             result = self.environment.execute_action(action, invocation["args"])
