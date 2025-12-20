@@ -219,8 +219,6 @@ python main.py
 Example interaction:
 
 ```
-Task: read main.py
-
 Available agents: file | readme
 Select agent: readme
 [LLM] Provider=Portkey | Model=gpt-4o-mini
