@@ -14,59 +14,158 @@ M → Memory
 E → Environment  
 ```
 
-The framework integrates with **Groq's Llama 3.3 70B** for fast structured inference and supports **JSON-based function calling**, enabling reliable tool execution.
 
-This project demonstrates:
+The framework is designed to build **tool-driven autonomous agents** that operate through **structured decision loops**, rather than free-form text generation.
 
-- Agent architecture design  
-- Function calling with real environment actions  
-- Modular tool registry  
-- Memory-driven context  
-- Pluggable language model interface  
-- Extensibility for multiple agent types  
+It supports **multiple LLM providers**, **agent specialization**, **model routing**, and **safe tool execution**, making it suitable for real-world agentic systems—not just demos.
+
+---
+
+## 🧩 Key Ideas
+
+- Agents **never act directly** — they reason → choose tools → observe results
+- Behavior is shaped primarily by **Goals**, not hard-coded logic
+- Tools are **first-class primitives**, not prompt hacks
+- LLMs are **pluggable infrastructure**, not embedded assumptions
+
+## 🔐 Design Guarantees
+
+- No side-effects without tools
+- No implicit actions
+- Deterministic agent loop
+- Centralized model selection
 
 ---
 
 ## ⭐ Features
 
 ### 🔧 Modular GAME Components
-- **Goals** define high-level tasks  
-- **Actions** define what the agent can execute  
-- **Memory** stores past interactions  
-- **Environment** performs real-world execution  
 
-### ⚙️ Pluggable LLM Backend
-- Groq Llama 3.3 70B included  
-- Easily switch to OpenAI, Anthropic, or local models (Ollama, LM Studio)  
+- **Goals**  
+  Define *what* the agent should achieve and *how* it should behave
+
+- **Actions**  
+  Explicit, schema-defined capabilities exposed to the agent
+
+- **Memory**  
+  Memory is append-only and scoped per agent execution unless explicitly persisted.
+
+- **Environment**  
+  Executes real side-effects (filesystem, outputs, APIs)
+
+---
+
+### 🧠 Multi-Agent Architecture
+
+Agents are **specialized**, not generic:
+
+- **File Agent**
+  - Explore project files
+  - Read & search code
+  - Explain structure and behavior
+
+- **README Agent**
+  - Inspect project files  
+  - Infer architecture and purpose  
+  - Generate a structured README  
+  - Write it to the `output/` directory
+  - This demonstrates **agent-driven content creation with real side-effects**, not just text output.
+
+Agents are created via a central **AgentFactory**, making it easy to add new agent types without touching the core loop.
+
+
+---
+
+### ⚙️ Pluggable LLM Backends
+
+Supported via a unified interface:
+
+- **Groq**  
+  - Fast inference
+  - Tool-calling capable models (Llama / Qwen)
+
+- **Portkey**
+  - Used with **`gpt-4o-mini`**
+  - Reliable function calling
+  - Ideal for complex multi-step agents
+
+LLM selection is controlled centrally via config and routing logic — **no agent hard-codes a model**.
+
+---
+
+### 🧭 Model Routing & Registry
+
+- Central **model registry** with metadata (provider, cost tier, capabilities)
+- Router selects the best model based on:
+  - Provider
+  - Tool-calling reliability
+  - User preference (pinned vs automatic)
+
+This avoids scattering model decisions across agents.
+
+---
 
 ### 🛠 Extensible Tool Registry
-Add new tools by simply registering a new `Action`.
+
+New tools can be added by registering an `Action`:
+
+```python
+registry.register(Action(
+    name="delete_file",
+    function=delete_file,
+    description="Delete a file",
+    parameters={
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"}
+        },
+        "required": ["name"]
+    }
+))
+```
 
 ### 🔄 Full Agent Loop
-Includes:
-- Prompt construction  
-- Tool-call generation  
-- Action execution  
-- Memory update  
-- Loop termination logic  
+Each agent runs a structured loop:
+
+- Construct prompt from Goals + Memory + Tools
+- Ask LLM to choose exactly one tool
+- Execute tool in the Environment
+- Store result in Memory
+- Decide next step or terminate
+- This enforces predictability, safety, and debuggability.  
+
+### ⛔ Termination & Safety Guarantees
+
+- Agents have a maximum iteration limit
+- Only one tool call is allowed per step
+- Invalid tool calls immediately halt execution
+- Agents must explicitly emit a TERMINATE decision
 
 ---
 
 ## 📦 Project Structure
 
 ```
-game_agent/
+game-framework/
 │
-├── main.py                    # Entry point
+├── main.py                     # Entry point
+├── output/                     # Agent-generated artifacts (gitignored)
 │
 └── game/
-    ├── goals/                # G: Goals
-    ├── actions/              # A: Actions + registry
-    ├── memory/               # M: Memory
-    ├── environment/          # E: Environment executor
-    ├── language/             # Prompt + parser
-    ├── core/                 # Agent loop
-    └── llm/                  # Groq client
+    ├── agents/                 # AgentFactory + agent implementations
+    │   ├── file_agent/
+    │   └── readme_agent/
+    │
+    ├── actions/                # Action definitions + registries
+    │   └── core/
+    │
+    ├── goals/                  # Goal definitions
+    ├── memory/                 # Memory abstraction
+    ├── environment/            # Action executor
+    ├── language/               # Prompt + parsing logic
+    ├── core/                   # Agent loop
+    ├── llm/                    # LLM clients, routing, registry
+    └── config/                 # Global configuration
 ```
 
 ---
@@ -74,24 +173,37 @@ game_agent/
 ## 🔍 Architecture Diagram
 
 ```
-                ┌─────────────────────────────────┐
-                │              Goals               │
-                └─────────────────────────────────┘
-                               │
-                               ▼
-┌────────────┐     ┌───────────────────┐     ┌────────────┐
-│  Actions   │◄────┤     Agent Loop    ├────►│ Environment │
-└────────────┘     └───────────────────┘     └────────────┘
-                               │
-                               ▼
-                ┌─────────────────────────────────┐
-                │             Memory               │
-                └─────────────────────────────────┘
-                               │
-                               ▼
-                ┌─────────────────────────────────┐
-                │         LLM (Groq API)          │
-                └─────────────────────────────────┘
+            ┌───────────────────────┐
+            │      AgentFactory     │
+            │ (selects agent type)  │
+            └───────────┬───────────┘
+                        │
+                        ▼
+            ┌───────────────────────┐
+            │        Agent          │
+            │     (GAME Loop)       │
+            └───────────┬───────────┘
+                        │
+        ┌───────────────┼──────────────────┐
+        │               │                  │
+        ▼               ▼                  ▼
+┌────────────┐   ┌────────────┐     ┌────────────┐
+│   Goals    │   │   Memory   │     │   Actions  │
+│ (what/how) │   │ (context)  │     │  (tools)   │
+└────────────┘   └────────────┘     └────────────┘
+                        │
+                        ▼
+              ┌──────────────────┐
+              │        LLM       │
+              │  (Groq / Portkey)│
+              └──────────┬───────┘
+                         │
+                         ▼
+              ┌──────────────────┐
+              │   Environment    │
+              │ (FS / output /   │
+              │  side-effects)   │
+              └──────────────────┘
 ```
 
 ---
@@ -109,9 +221,30 @@ Example interaction:
 ```
 Task: read main.py
 
-Agent Decision: {"tool": "read_file", "args": {"file_name": "main.py"}}
-Action Result: {"tool_executed": true, "result": "...file contents...", "timestamp": "..."}
+Available agents: file | readme
+Select agent: readme
+[LLM] Provider=Portkey | Model=gpt-4o-mini
+Task: Analyze the .py files in the project and generate a README
+
+Agent thinking...
+Agent Decision: {'tool': 'list_project_files', 'args': {'dir_path': ''}}
+Action Result: {'tool_executed': True, 'result': ['.gitignore', 'main.py', '.git', '.gitattributes', 'README.md', 'game', 'output', '__pycache__'], 'timestamp': '2025-12-19T19:07:16+0000'}
+....
 ```
+---
+
+## ⚙️ Configuration
+
+All runtime behavior is controlled via a **global config**:
+
+- LLM provider (Groq / Portkey)  
+- Model selection strategy  
+- Token limits  
+- Agent verbosity & iteration limits  
+
+This allows changing behavior **without touching agent code**.
+
+The active LLM provider (Groq or Portkey) is selected via configuration and routing logic — no agent hardcodes credentials or models.
 
 ---
 
@@ -120,7 +253,7 @@ Action Result: {"tool_executed": true, "result": "...file contents...", "timesta
 ### 1️⃣ Install dependencies
 
 ```bash
-pip install groq
+pip install groq portkey-ai
 ```
 
 ---
@@ -129,6 +262,8 @@ pip install groq
 
 ```bash
 export GROQ_API_KEY="your_api_key_here"
+export PORTKEY_API_KEY="your_portkey_api_key"
+export PORTKEY_VIRTUAL_KEY="your_virtual_key"
 ```
 
 ---
@@ -143,61 +278,48 @@ python main.py
 
 ## 🛠 Extending the Framework
 
-### Add a new tool (Action)
-
-```python
-def delete_file(name: str):
-    os.remove(name)
-    return f"{name} deleted."
-
-registry.register(Action(
-    name="delete_file",
-    function=delete_file,
-    description="Delete a file",
-    parameters={
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"}
-        },
-        "required": ["name"]
-    }
-))
-```
-
----
-
 ### Create a new agent
+1. Create a new folder under game/agents/
+2. Define:
+    - Goals
+    - Actions
+    - Agent factory function
+3. Register it in AgentFactory
+
+No changes to the core loop required.
 
 ```python
 coding_agent = Agent(
     goals=[Goal(priority=1, name="coding", description="Write Python code")],
     agent_language=AgentLanguage(),
-    action_registry=CodeRegistry(),
-    generate_response=GroqClient(),
-    environment=DevEnvironment(),
+    action_registry=registry,
+    generate_response=llm,
+    environment=Environment(),
 )
 ```
 
 ---
 
 ## 🔮 Roadmap
-
-- [ ] Add RAG support  
-- [ ] Add DevOps tools (Kubernetes, Docker, GitHub APIs)  
-- [ ] Build a coding agent with file-editing abilities  
-- [ ] Add multi-agent coordination  
-- [ ] Add Streamlit/FastAPI UI  
-- [ ] Add LiteLLM routing + fallback models  
-- [ ] Add JSON repair and retry logic  
-- [ ] Add CI + unit tests  
+- [ ] Multi-agent coordination
+- [ ] RAG integration
+- [ ] DevOps / GitHub / CI tools
+- [ ] JSON repair & retry strategies
+- [ ] Web UI (Streamlit / FastAPI)
+- [ ] Evaluation & tracing hooks
 
 ---
 
 ## 🤝 Contributing
 
 PRs welcome!  
-You can contribute new tools, environments, or agents.
+If you’re exploring:
 
+- Agentic architectures
+- Tool-calling reliability
+- LLM orchestration patterns
+
+…this project is intentionally structured for learning and extension.
 ---
 
 ## 📄 License

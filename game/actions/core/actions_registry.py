@@ -1,6 +1,6 @@
 from game.actions.registry import ActionRegistry
 from game.actions.action import Action
-from game.actions.core.file_actions import list_files, read_file, search_in_file
+from game.actions.core.file_actions import list_files, read_file, search_in_file, write_output_file
 from game.actions.core.terminate_action import terminate
 
 core_registry = ActionRegistry()
@@ -56,5 +56,30 @@ core_registry.register(Action(
         "required": ["message"]
     },
     terminal = True
+))
+
+core_registry.register(Action(
+    name="write_output_file",
+    function=write_output_file,
+    description="Write content to a file inside the output directory",
+    parameters={
+        "type": "object",
+        "properties": {
+            "filename": {
+                "type": "string",
+                "description": "Name of the output file (e.g. README.md)"
+            },
+            "content": {
+                "type": "string",
+                "description": "File content to write"
+            },
+            "output_dir": {
+                "type": "string",
+                "description": "Target directory (default: output)"
+            }
+        },
+        "required": ["filename", "content"]
+    },
+    terminal=False
 ))
 
