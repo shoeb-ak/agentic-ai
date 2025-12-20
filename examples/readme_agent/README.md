@@ -46,7 +46,6 @@ game/
 └── llm/
     ├── llm_factory.py
 ```
-```
 
 ## How to Run / Use the Project
 1. Set up your environment and install the necessary dependencies.
