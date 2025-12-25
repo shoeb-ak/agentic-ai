@@ -24,13 +24,11 @@ class AgentLanguage:
         """
         system_message = self.build_system_message(goals, environment)
         memory_messages = memory.get_memories(limit=None)
-
-        tools_schema = self.build_tools_schema(actions)
         
         return Prompt(
             system=system_message,
             messages=memory_messages,
-            tools=tools_schema
+            tools=actions
         )
 
     def build_system_message(self, goals, environment) -> str:
@@ -77,28 +75,6 @@ Your goals:
 
 Environment: {environment.__class__.__name__}
 """
-
-
-    # ------------------------------------------------------------------
-    # TOOL SCHEMA FOR FUNCTION CALLING
-    # ------------------------------------------------------------------
-    def build_tools_schema(self, actions) -> List[dict]:
-        """
-        Build the OpenAI/Groq-style tool schema.
-        """
-        tool_list = []
-
-        for action in actions:
-            tool_list.append({
-                "type": "function",
-                "function": {
-                    "name": action.name,
-                    "description": action.description,
-                    "parameters": action.parameters
-                }
-            })
-
-        return tool_list
 
     # ------------------------------------------------------------------
     # RESPONSE PARSING

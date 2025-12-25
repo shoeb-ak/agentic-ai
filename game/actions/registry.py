@@ -1,16 +1,30 @@
+from game.actions.core.actions_registry import get_tools_by_tags
+
+
 class ActionRegistry:
-    def __init__(self):
-        self.actions = {}
+    """
+    Agent-scoped view of allowed tools.
+    """
 
-    def register(self, action):
-        self.actions[action.name] = action
+    def __init__(self, tags=None):
+        self._tools = get_tools_by_tags(tags)
 
-    def merge(self, other_registry):
-        self.actions.update(other_registry.actions)
-        
-    def get_action(self, name):
-        return self.actions.get(name)
+    def list_tools(self):
+        return self._tools.values()
 
-    def get_actions(self):
-        return list(self.actions.values())
+    def get_tool(self, name):
+        return self._tools[name]
+
+    def get_openai_schema(self):
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool["tool_name"],
+                    "description": tool["description"],
+                    "parameters": tool["parameters"],
+                },
+            }
+            for tool in self._tools.values()
+        ]
 

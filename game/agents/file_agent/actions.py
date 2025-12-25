@@ -1,6 +1,9 @@
-from game.actions.registry import ActionRegistry
-from game.actions.core.actions_registry import core_registry
+"""
+File-agent specific actions.
 
-registry = ActionRegistry()
+Currently empty because file_agent only uses
+core actions from game.actions.
 
-registry.merge(core_registry)
+This file exists to keep agent structure consistent
+and to allow future extension.
+"""

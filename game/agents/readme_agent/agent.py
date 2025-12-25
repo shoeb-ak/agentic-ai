@@ -5,16 +5,20 @@ from game.environment.environment import Environment
 from game.llm.llm_factory import LLMFactory
 from game.config.config import CONFIG
 
+from game.actions.registry import ActionRegistry
+import game.actions  
+from . import actions
+
 from .goals import readme_goals
-from .actions import registry
 
 def create_agent():
     llm = LLMFactory.create()
+    action_registry = ActionRegistry(tags=["file_operations", "readme", "system"])
 
     return Agent(
         goals=readme_goals,
         agent_language=AgentLanguage(),
-        action_registry=registry,
+        action_registry=action_registry,
         environment=Environment(),
         generate_response=llm
     )

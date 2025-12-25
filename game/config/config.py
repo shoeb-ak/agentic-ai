@@ -33,7 +33,7 @@ class GroqConfig:
 @dataclass(frozen=True)
 class LLMConfig:
     # Provider selection
-    provider: str = "portkey"   # "groq" | "portkey"
+    provider: str = "groq"   # "groq" | "portkey"
 
     # Model selection strategy
     prefer_best_tool_model: bool = True

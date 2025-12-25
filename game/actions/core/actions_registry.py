@@ -1,85 +1,31 @@
-from game.actions.registry import ActionRegistry
-from game.actions.action import Action
-from game.actions.core.file_actions import list_files, read_file, search_in_file, write_output_file
-from game.actions.core.terminate_action import terminate
+from collections import defaultdict
 
-core_registry = ActionRegistry()
+# Global tool storage (simple by design)
+TOOLS = {}
+TOOLS_BY_TAG = defaultdict(list)
 
-core_registry.register(Action(
-    name="list_files",
-    function=list_files,
-    description="List all files in the current directory",
-    parameters=
-        {"type": "object", "properties": {
-            "dir_path": {"type": "string"}
-        }, 
-        "required": ["dir_path"]
-    }
-))
 
-core_registry.register(Action(
-    name="read_file",
-    function=read_file,
-    description="Read the contents of a specific file",
-    parameters={
-        "type": "object",
-        "properties": {
-            "file_name": {"type": "string"}
-        },
-        "required": ["file_name"]
-    }
-))
+def register_tool_metadata(metadata: dict):
+    name = metadata["tool_name"]
 
-core_registry.register(Action(
-    name="search_in_file",
-    function=search_in_file,
-    description="Search for a term in a specific file",
-    parameters={
-        "type": "object",
-        "properties": {
-            "file_name": {"type": "string"},
-            "search_term": {"type": "string"}
-        },
-        "required": ["file_name", "search_term"]
-    }
-))
+    if name in TOOLS:
+        raise ValueError(f"Tool '{name}' already registered")
 
-core_registry.register(Action(
-    name="terminate",
-    function=terminate,
-    description="Terminate the conversation with a helpful summary",
-    parameters={
-        "type": "object",
-        "properties": {
-            "message": {"type": "string"}
-        },
-        "required": ["message"]
-    },
-    terminal = True
-))
+    if not metadata["tags"]:
+        raise ValueError(f"Tool '{name}' must have at least one tag")
 
-core_registry.register(Action(
-    name="write_output_file",
-    function=write_output_file,
-    description="Write content to a file inside the output directory",
-    parameters={
-        "type": "object",
-        "properties": {
-            "filename": {
-                "type": "string",
-                "description": "Name of the output file (e.g. README.md)"
-            },
-            "content": {
-                "type": "string",
-                "description": "File content to write"
-            },
-            "output_dir": {
-                "type": "string",
-                "description": "Target directory (default: output)"
-            }
-        },
-        "required": ["filename", "content"]
-    },
-    terminal=False
-))
+    TOOLS[name] = metadata
 
+    for tag in metadata["tags"]:
+        TOOLS_BY_TAG[tag].append(name)
+
+
+def get_tools_by_tags(tags=None):
+    if not tags:
+        return dict(TOOLS)
+
+    allowed = set()
+    for tag in tags:
+        allowed.update(TOOLS_BY_TAG.get(tag, []))
+
+    return {name: TOOLS[name] for name in allowed}

@@ -20,7 +20,6 @@ class Agent:
         """
         Initialize an agent with its core GAME components
         """
-        #self.generate_response = LLMFactory.create()
         self.goals = goals
         self.generate_response = generate_response
         self.agent_language = agent_language
@@ -30,7 +29,7 @@ class Agent:
     def construct_prompt(self, goals: List[Goal], memory: Memory, actions: ActionRegistry) -> Prompt:
         """Build prompt with memory context."""
         return self.agent_language.construct_prompt(
-            actions=actions.get_actions(),
+            actions=actions.get_openai_schema(),
             environment=self.environment,
             goals=goals,
             memory=memory
@@ -39,12 +38,12 @@ class Agent:
     def get_action(self, response: str):
         """Parse response → determine which tool and arguments to execute."""
         invocation = self.agent_language.parse_response(response)
-        action = self.actions.get_action(invocation["tool"])
-        return action, invocation
+        tool = self.actions.get_tool(invocation["tool"])
+        return tool, invocation
 
     def should_terminate(self, response: str) -> bool:
         action_def, _ = self.get_action(response)
-        return action_def.terminal
+        return action_def["terminal"]
 
     def set_current_task(self, memory: Memory, task: str):
         memory.add_memory({"role": "user", "content": task})
@@ -80,10 +79,10 @@ class Agent:
             print(f"Agent Decision: {response}")
 
             # 2. Identify intended action
-            action, invocation = self.get_action(response)
+            tool, invocation = self.get_action(response)
 
             # Prevent premature termination
-            if action.name == "terminate" and step == 0:
+            if tool["tool_name"] == "terminate" and step == 0:
                 memory.add_memory({
                     "role": "system",
                     "content": "Termination is not allowed as the first action. Execute the required tool instead."
@@ -91,7 +90,11 @@ class Agent:
                 continue
 
             # 3. Execute the action
-            result = self.environment.execute_action(action, invocation["args"])
+            result = self.environment.execute_action(
+                tool["function"],
+                invocation["args"]
+            )
+
             print(f"Action Result: {result}")
 
             # 4. Update memory
