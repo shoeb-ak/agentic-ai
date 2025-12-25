@@ -45,7 +45,7 @@ It supports **multiple LLM providers**, **agent specialization**, **model routin
   Define *what* the agent should achieve and *how* it should behave
 
 - **Actions**  
-  Explicit, schema-defined capabilities exposed to the agent
+  Explicit capabilities implemented as plain Python functions, registered via decorators
 
 - **Memory**  
   Memory is append-only and scoped per agent execution unless explicitly persisted.
@@ -105,34 +105,32 @@ This avoids scattering model decisions across agents.
 
 ---
 
-### 🛠 Extensible Tool Registry
+### 🛠 Tool Registration Model
 
-New tools can be added by registering an `Action`:
+Tools are defined as **plain Python functions** and registered globally via decorators.
 
 ```python
-registry.register(Action(
-    name="delete_file",
-    function=delete_file,
-    description="Delete a file",
-    parameters={
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"}
-        },
-        "required": ["name"]
-    }
-))
+@register_tool(tags=["file_operations", "read"])
+def read_file(file_path: str) -> str:
+    """Reads and returns the content of a file."""
+    with open(file_path) as f:
+        return f.read()
 ```
+Key properties:
+- Single source of truth (function + docstring + type hints)
+- Automatic schema generation
+- No manual registries or merging
+- Tools become available only **when imported**
 
-### 🔄 Full Agent Loop
+### 🔄 Agent Execution Loop
 Each agent runs a structured loop:
 
 - Construct prompt from Goals + Memory + Tools
-- Ask LLM to choose exactly one tool
-- Execute tool in the Environment
+- Ask LLM to choose **exactly one tool**
+- Execute tool via the Environment
 - Store result in Memory
-- Decide next step or terminate
-- This enforces predictability, safety, and debuggability.  
+- Repeat until the agent signals completion
+- This enforces **predictability, safety, and debuggability**.  
 
 ### ⛔ Termination & Safety Guarantees
 
@@ -231,7 +229,7 @@ Action Result: {'tool_executed': True, 'result': ['.gitignore', 'main.py', '.git
 
 Agent thinking...
 Agent Decision: {'tool': 'read_file', 'args': {'file_name': 'game/actions/action.py'}}
-Action Result: {'tool_executed': True, 'result': 'from typing import Callable, Dict, Any\n\nclass Action:\n    def __init__(self,\n                 name: str,\n                 function: Callable,\n                 description: str,\n                 parameters: Dict,\n                 terminal: bool = False):\n        self.name = name\n        self.function = function\n        self.description = description\n        self.parameters = parameters\n        self.terminal = terminal\n\n    def execute(self, **args) -> Any:\n        return self.function(**args)\n\n', 'timestamp': '2025-12-19T19:07:26+0000'}
+Action Result: {'tool_executed': True, 'result': 'from typing import Callable, Dict, Any\n\nclass Action:\n ..... return self.function(**args)\n\n', 'timestamp': '2025-12-19T19:07:26+0000'}
 ....
 Agent thinking...
 Agent Decision: {'tool': 'terminate', 'args': {'message': 'The README has been fully generated and written to disk.'}}
@@ -289,9 +287,8 @@ python main.py
 1. Create a new folder under game/agents/
 2. Define:
     - Goals
-    - Actions
-    - Agent factory function
-3. Register it in AgentFactory
+    - Optional agent-specific tools (via decorators)
+3. Register the agent in AgentFactory
 
 No changes to the core loop required.
 
@@ -299,7 +296,7 @@ No changes to the core loop required.
 coding_agent = Agent(
     goals=[Goal(priority=1, name="coding", description="Write Python code")],
     agent_language=AgentLanguage(),
-    action_registry=registry,
+    action_registry=ActionRegistry(tags=["file_operations", "coding", "system"]),
     generate_response=llm,
     environment=Environment(),
 )
@@ -311,7 +308,7 @@ coding_agent = Agent(
 - [ ] Multi-agent coordination
 - [ ] RAG integration
 - [ ] DevOps / GitHub / CI tools
-- [ ] JSON repair & retry strategies
+- [ ] Policy & approval-gated tools
 - [ ] Web UI (Streamlit / FastAPI)
 - [ ] Evaluation & tracing hooks
 
@@ -323,7 +320,7 @@ PRs welcome!
 If you’re exploring:
 
 - Agentic architectures
-- Tool-calling reliability
+- Tool-calling correctness
 - LLM orchestration patterns
 
 …this project is intentionally structured for learning and extension.
